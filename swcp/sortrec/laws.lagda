@@ -43,7 +43,7 @@ variable, which can be shown by simple induction over said variable:
 %   → i [ xs ⁺ A ] ≡ suc[ q ] (i [ xs ]) A
 \begin{code}
 ⁺-nat[]v : i [ xs ⁺ A ] ≡ suc[ q ] (i [ xs ]) A
-⁺-nat[]v {q = V} {i = zero}     {xs = xs , x} = refl
+⁺-nat[]v {i = zero}     {xs = xs , x} = refl
 ⁺-nat[]v {i = suc j A}  {xs = xs , x} = ⁺-nat[]v {i = j}
 \end{code}
 The identity law is now easily provable by structural induction:
