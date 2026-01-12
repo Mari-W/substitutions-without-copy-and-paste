@@ -1,4 +1,4 @@
-{-# OPTIONS --rewriting --local-confluence-check #-}
+{-# OPTIONS --rewriting --local-confluence-check --double-check #-}
 module sysf where 
 
 open import Relation.Binary.PropositionalEquality hiding ([_])
@@ -78,6 +78,10 @@ v⊑ {T} = v⊑t
 data Mode : Set where
   ki ty ex : Mode 
 
+data IsB : Mode → Set where
+  instance exB : IsB ex 
+  instance tyB : IsB ty 
+
 variable
   m n : Mode 
   
@@ -103,9 +107,9 @@ _⊢[_]_ : (Γ : Con) → Sort → Γ ⊢ → Set
 _⊢_ = _⊢[ T ]_
 
 _↑ᵀ : Mode → Mode 
-ki   ↑ᵀ = ki
-ty   ↑ᵀ = ki
-ex   ↑ᵀ = ty 
+ki ↑ᵀ = ki
+ty ↑ᵀ = ki
+ex ↑ᵀ = ty 
 
 ⌊_⌋ᵀ : Con → ⟦ m ↑ᵀ ⟧ 
 ⌊_⌋ᵀ {m = ki} _ = tt
@@ -122,7 +126,6 @@ data Con where
   •      : Con
   _▷[_]_ : (Γ : Con) (m : Mode) → Γ ⊢[ m ]ᵀ → Con
 
-pattern _▷tt Γ  = Γ ▷[ ty ] tt
 pattern _▷_ Γ A =  Γ ▷[ ex ] A
 
 variable
@@ -153,17 +156,15 @@ variable
 open Sucᵀ {{...}}
  -}
 
+
 wkᵀ : Γ ⊢[ m ]ᵀ → ∀ R → (Γ ▷[ n ] R) ⊢[ m ]ᵀ
 data Tm where
-  `[_]_    : {Q : Γ ⊢[ m ]ᵀ} → 
-    ¬ (m ≡ ki) → 
+  `_    : {Q : Γ ⊢[ m ]ᵀ} {{_ : IsB m}} →  
     Γ ⊢[ V ∣ m ] Q → 
     Γ ⊢[ T ∣ m ] Q
-  zero  : {Q : Γ ⊢[ m ]ᵀ} → 
-    ¬ (m ≡ ki) → 
+  zero  : {Q : Γ ⊢[ m ]ᵀ} {{_ : IsB m}} →  
     (Γ ▷[ m ] Q) ⊢[ V ∣ m ] wkᵀ Q Q
-  suc   : {Q : Γ ⊢[ m ]ᵀ} → 
-    ¬ (m ≡ ki) → 
+  suc   : {Q : Γ ⊢[ m ]ᵀ} {{_ : IsB m}} → 
     Γ ⊢[ V ∣ m ] Q → 
     (Γ ▷[ n ] R) ⊢[ V ∣ m ] wkᵀ Q R
 
@@ -171,6 +172,7 @@ data Tm where
 
   o     : Γ ⊢
   _⇒_   : Γ ⊢ → Γ ⊢ → Γ ⊢
+  ∀α_   : (Γ ▷[ ty ] *) ⊢ → Γ ⊢ 
 
   _·_   : Γ ⊢ (A ⇒ B) → Γ ⊢ A → Γ ⊢ B
   ƛ_    : (Γ ▷ A) ⊢ wkᵀ B A → Γ ⊢ (A ⇒ B) 
@@ -187,61 +189,114 @@ variable
 
 tm⊑ : q ⊑ s → Γ ⊢[ q ∣ m ] Q → Γ ⊢[ s ∣ m ] Q
 tm⊑ rfl x  = x
-tm⊑ {m = ki} v⊑t (zero prf)  with () ← prf refl
-tm⊑ {m = ki} v⊑t (suc prf _) with () ← prf refl
-tm⊑ {m = ty} {Q = Q} v⊑t i = `[_]_ {Q = Q} (λ ()) i
-tm⊑ {m = ex} v⊑t i = `[ (λ ()) ] i  
+tm⊑ {m = ki} v⊑t (zero {{()}}) 
+tm⊑ {m = ty} {Q = Q} v⊑t i = `_ {Q = Q} i
+tm⊑ {m = ex} v⊑t i = ` i  
 
-_^_ : (σ : Γ ⊩[ q ] Δ) → ∀ Q → Γ ▷ (Q [ σ ]ᵀ) ⊩[ q ] Δ ▷ Q 
+zero[_∣_] : ∀ q m {Q : Γ ⊢[ m ]ᵀ} → (Γ ▷[ m ] Q) ⊢[ q ∣ m ] wkᵀ Q Q
+zero[ V ∣ ki ] = {!   !}
+zero[ V ∣ ty ] = {!   !}
+zero[ V ∣ ex ] = {!   !} 
+zero[ T ∣ m ]      =   {!   !} 
 
-wkᵀ Q = {!   !}
+abstract
+  id-poly : Γ ⊩[ q ] Γ 
 
-_[_]ᵀ {m = ki} * σ = *
-_[_]ᵀ {m = ty} * σ = *
-_[_]ᵀ {m = ki} (zero prf) _            with () ← prf refl
-_[_]ᵀ {m = ty} (zero prf) _            with () ← prf refl
-_[_]ᵀ {m = ki} (suc prf _) _           with () ← prf refl
-_[_]ᵀ {m = ty} (suc prf _) _           with () ← prf refl
-_[_]ᵀ {m = ki} (`[ prf ] _) σ          with () ← prf refl
-_[_]ᵀ {m = ty} (`[ prf ] _) σ          with () ← prf refl 
-_[_]ᵀ {m = ex} (`[_]_ {Q = Q} prf x) σ = tm⊑ {Q = Q} ⊑t (x [ σ ]ᵀ)
-_[_]ᵀ {m = ex} (zero _) (σ , x)        = x
-_[_]ᵀ {m = ex} (suc _ x) (σ , _)       = x [ σ ]ᵀ
-_[_]ᵀ {m = ex} o       σ = o
-_[_]ᵀ {m = ex} (A ⇒ B) σ = (A [ σ ]ᵀ) ⇒ (B [ σ ]ᵀ)
+  id : Γ ⊩[ V ] Γ 
+  id = id-poly
+  {-# INLINE id #-}
+  
 
-postulate
-  wk[] : {R : Γ ⊢[ T ∣ n ]ᵀ} {Q : Γ ⊢[ m ]ᵀ} {σ :  Δ ⊩[ r ] Γ} {x : Δ ⊢[ r ∣ n ] (R [ σ ]ᵀ)} → 
-    wkᵀ Q R [ σ , x ]ᵀ ≡ Q [ σ ]ᵀ  
--- {-# REWRITE wk[] #-}
+  [id]ᵀ′ : {Q : Γ ⊢[ V ∣ m ]ᵀ} → _[_]ᵀ {m = m} Q id ≡ Q
+  [id]ᵀ : {Q : Γ ⊢[ m ]ᵀ} → _[_]ᵀ {m = m} {r = r} Q id-poly ≡ Q
 
-_[_] : {Q : Γ ⊢[ T ∣ m ]ᵀ} → Γ ⊢[ q ∣ m ] Q → (σ : Δ ⊩[ r ] Γ) → Δ ⊢[ q ⊔ r ∣ m ] (Q [ σ ]ᵀ)
-_[_] {m = ex} (`[ prf ] x) σ = tm⊑ ⊑t (x [ σ ])
-_[_] {m = ex} (zero prf) (σ , x) = {! x  !}
-_[_] {m = ex} (suc prf x) (σ , _) = {! x [ σ ]  !}
-_[_] {m = ex} (t₁ · t₂) σ = {!   !}
-_[_] {m = ex} (ƛ t) σ = {!   !}
-_[_] {m = ki} {q = q} {Q = Q} t σ = _[_]ᵀ {q = q} {m = ty} {! t  !} σ
-_[_] {m = ty} {Q = Q} t σ = {!   !}
+  _^_ : (σ : Γ ⊩[ q ] Δ) → ∀ Q → Γ ▷[ m ] (Q [ σ ]ᵀ) ⊩[ q ] Δ ▷[ m ] Q 
 
-lem : (m ↑ᵀ) ↑ᵀ ≡ ki 
-lem {ki} = refl
-lem {ty} = refl
-lem {ex} = refl
-{-# REWRITE lem #-}
+  _[_]ᵀ {m = ki} * σ = *
+  _[_]ᵀ {m = ty} * σ = *
+  _[_]ᵀ {m = ki} (zero {{()}})
+  _[_]ᵀ {m = ty} (zero {{()}})
+  _[_]ᵀ {m = ki} (`_ {{()}} _) σ        
+  _[_]ᵀ {m = ex} (`_ {Q = Q} x) σ = tm⊑ {Q = Q} ⊑t (x [ σ ]ᵀ)
+  _[_]ᵀ {m = ex} (zero) (σ , x)        = x
+  _[_]ᵀ {m = ex} (suc x) (σ , _)       = x [ σ ]ᵀ
+  _[_]ᵀ {m = ex} o       σ = o
+  _[_]ᵀ {m = ex} (A ⇒ B) σ = (A [ σ ]ᵀ) ⇒ (B [ σ ]ᵀ) 
+  _[_]ᵀ {m = ex} (∀α A) σ  = ∀α (A [ σ ^ _ ]ᵀ)
+
+  _⁺_ : Γ ⊩[ q ] Δ → ∀ Q → Γ ▷[ m ] Q ⊩[ q ] Δ
+
+  wkᵀ Q R = Q [ id ⁺ R ]ᵀ 
+
+  {-# REWRITE [id]ᵀ #-} 
+
+  wk : {Q : Γ ⊢[ m ]ᵀ} → Γ ⊢[ q ∣ m ] Q → ∀ R → (Γ ▷[ n ] R) ⊢[ q ∣ m ] wkᵀ Q R
+
+  ε ⁺ A = ε
+  (σ , x) ⁺ A = σ ⁺ A , {! wk x A  !}
+  
+  σ ^ A =  σ ⁺ (A [ σ ]ᵀ) , {! zero[ _ ∣ _ ]  !}
 
 
-lem₁ : {R : Γ ⊢[ T ∣ m ↑ᵀ ]ᵀ} → ⌊_⌋ {Γ = Γ} R ≡ ⌊_⌋ᵀ {m = m} Γ 
-lem₁ {m = ki} = refl
-lem₁ {m = ty} = refl
-lem₁ {m = ex} = refl
-{-# REWRITE lem₁ #-}
+  id-poly {Γ = •} = ε
+  id-poly {Γ = Γ ▷[ m ] Q} {q = q} = id-poly ^ Q 
 
-coincidence : {Q : Γ ⊢[ q ∣ m ]ᵀ} → {σ : Δ ⊩[ r ] Γ} →
-   Q [ σ ]ᵀ ≡ _[_] {Q = *} Q σ
-coincidence {m = ki} = refl
-coincidence {m = ty} = refl 
-coincidence {m = ex} = refl
+  [id]ᵀ′ {m = ki} {Q = zero {{()}}} 
+  [id]ᵀ′ {m = ty} {Q = zero {{()}}}
+  [id]ᵀ′ {m = ex} {Q = zero} = {!   !}
+  [id]ᵀ′ {m = ex} {Q = suc x} = {!   !}
+
+  [id]ᵀ {m = ki} {Q = `_ {{()}} _}
+  [id]ᵀ {m = ki} {Q = *} = refl
+  [id]ᵀ {m = ty} {Q = `_ {{()}} _}
+  [id]ᵀ {m = ty} {Q = *} = refl
+  [id]ᵀ {m = ex} {Q = (` x)} = {!   !}
+  [id]ᵀ {m = ex} {Q = o} = refl
+  [id]ᵀ {m = ex} {r = r} {Q = A ⇒ B} = cong₂ _⇒_ ([id]ᵀ {r = r}) ([id]ᵀ {r = r})
+  [id]ᵀ {m = ex} {Q = ∀α A} = cong ∀α_ ([id]ᵀ {Q = A})
+
+
+  -- _[_] : {Q : Γ ⊢[ T ∣ m ]ᵀ} → Γ ⊢[ q ∣ m ] Q → (σ : Δ ⊩[ r ] Γ) → Δ ⊢[ q ⊔ r ∣ m ] (Q [ σ ]ᵀ)
+  -- _[_] {m = ki} * σ                       = *
+  -- _[_] {m = ki} (zero {{()}}) _              
+  -- _[_] {m = ki} (`_ {{()}} _) σ
+  -- _[_] {m = ty} (`_ {Q = Q} x) σ   = tm⊑ {Q = Q} ⊑t (_[_] {Q = Q} x σ)
+  -- _[_] {m = ty} (zero) (σ , x)          = x
+  -- _[_] {m = ty} (suc {Q = Q} x) (σ , _) = (_[_] {Q = Q} x σ)
+  -- _[_] {m = ty} o       σ                 = o
+  -- _[_] {m = ty} (A ⇒ B) σ                 = (_[_] {Q = *} A σ) ⇒ (_[_] {Q = *} B σ)
+  -- _[_] {m = ty} (∀α A) σ                  = ∀α (_[_] {Q = *} A (σ ^ _))
+  -- _[_] {m = ex} (`_ x) σ                = tm⊑ ⊑t (x [ σ ])
+  -- _[_] {m = ex} (zero) (σ , x)        = {! x  !}
+  -- _[_] {m = ex} (suc x) (σ , _)       = {! x [ σ ]  !}
+  -- _[_] {m = ex} (t₁ · t₂) σ               = {!   !}
+  -- _[_] {m = ex} (ƛ t) σ                   = {!   !} 
+
+
+-- lem : (m ↑ᵀ) ↑ᵀ ≡ ki 
+-- lem {ki} = refl
+-- lem {ty} = refl
+-- lem {ex} = refl
+-- {-# REWRITE lem #-}
+-- 
+-- 
+-- lem₁ : {R : Γ ⊢[ T ∣ m ↑ᵀ ]ᵀ} → ⌊_⌋ {Γ = Γ} R ≡ ⌊_⌋ᵀ {m = m} Γ 
+-- lem₁ {m = ki} = refl
+-- lem₁ {m = ty} = refl
+-- lem₁ {m = ex} = refl
+-- {-# REWRITE lem₁ #-}
+-- 
+-- coincidence : {Q : Γ ⊢[ q ∣ m ]ᵀ} → {σ : Δ ⊩[ r ] Γ} →
+--    Q [ σ ]ᵀ ≡ _[_] {Q = *} Q σ
+-- coincidence = {!   !}
+
+-- postulate
+--   coincidence : {Q : Γ ⊢[ q ∣ m ]ᵀ} → {σ : Δ ⊩[ r ] Γ} →
+--      Q [ σ ]ᵀ ≡ _[_] {Q = *} Q σ
+
+-- _ = (zero {m = ex} (λ { () })) [ ε , {! `[ ? ] (zero {m = ex} (λ { () }))  !} ]ᵀ
+
+-- {-# REWRITE coincidence #-} 
 
   -- ε     : Γ ⊩[ q ] •
   

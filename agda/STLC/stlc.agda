@@ -35,7 +35,7 @@ data Tm : (m : Mode) → ⟦ m ⟧ → Set
 
 ⟦ ty ⟧ = ⊤
 ⟦ cx ⟧ = ⊤
-⟦ ex _ ⟧ = Tm cx tt × Tm (ty) tt
+⟦ ex _ ⟧ = Tm cx tt × Tm ty tt
 ⟦ su _ ⟧ = Tm cx tt × Tm cx tt
 
 Con : Set
