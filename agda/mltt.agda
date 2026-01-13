@@ -88,20 +88,20 @@ variable
 ⟦_⟧ : Mode → Set
 data Tm : (s : Sort) (m : Mode) → ⟦ m ⟧ → Set   
 
-data Cx : Set 
+data Con : Set 
 
 ⟦ ex ⟧ = ∃[ Γ ] Tm T ty Γ
-⟦ ty ⟧ = Cx
+⟦ ty ⟧ = Con
 ⟦ ki ⟧ = ⊤
 
 ⋆ = Tm T ki tt
 
-_⊢[_] : Cx → Sort → Set
+_⊢[_] : Con → Sort → Set
 Γ ⊢[ q ] = Tm q ty Γ
 
 _⊢ = _⊢[ T ]
 
-_⊢[_]_ : (Γ : Cx) → Sort → Γ ⊢ → Set 
+_⊢[_]_ : (Γ : Con) → Sort → Γ ⊢ → Set 
 Γ ⊢[ q ] A = Tm q ex (Γ , A)  
 
 _⊢_ = _⊢[ T ]_
@@ -111,25 +111,25 @@ ki ↑ᵀ = ki
 ty ↑ᵀ = ki
 ex ↑ᵀ = ty 
 
-⌊_⌋ᵀ : Cx → ⟦ m ↑ᵀ ⟧ 
+⌊_⌋ᵀ : Con → ⟦ m ↑ᵀ ⟧ 
 ⌊_⌋ᵀ {m = ki} _ = tt
 ⌊_⌋ᵀ {m = ty} _ = tt
 ⌊_⌋ᵀ {m = ex} Γ = Γ
 
-_⊢[_∣_]ᵀ : Cx → Sort → Mode → Set 
+_⊢[_∣_]ᵀ : Con → Sort → Mode → Set 
 Γ ⊢[ q ∣ m ]ᵀ = Tm q (m ↑ᵀ) ⌊ Γ ⌋ᵀ 
 
-_⊢[_]ᵀ : Cx → Mode → Set 
+_⊢[_]ᵀ : Con → Mode → Set 
 Γ ⊢[ m ]ᵀ = Γ ⊢[ T ∣ m ]ᵀ
 
-data Cx where
-  •      : Cx
-  _▷[_]_ : (Γ : Cx) (m : Mode) → Γ ⊢[ m ]ᵀ → Cx
+data Con where
+  •      : Con
+  _▷[_]_ : (Γ : Con) (m : Mode) → Γ ⊢[ m ]ᵀ → Con
 
 pattern _▷_ Γ A =  Γ ▷[ ex ] A
 
 variable
-  Γ Δ Θ : Cx  
+  Γ Δ Θ : Con  
   A B C : Γ ⊢[ T ]
   i j k : Γ ⊢[ V ] A
   e f : Γ ⊢[ T ] A
@@ -141,7 +141,7 @@ variable
 ⌊_⌋ {Γ} {m = ty} _ = Γ 
 ⌊_⌋ {m = ex}     Q = _ , Q
 
-_⊢[_∣_]_ : (Γ : Cx) → (s : Sort) (m : Mode) → Γ ⊢[ m ]ᵀ → Set 
+_⊢[_∣_]_ : (Γ : Con) → (s : Sort) (m : Mode) → Γ ⊢[ m ]ᵀ → Set 
 Γ ⊢[ s ∣ m ] Q = Tm s m ⌊ Q ⌋
 
 variable
@@ -177,7 +177,7 @@ data Tm where
   _·_   : Γ ⊢ (A ⇒ B) → Γ ⊢ A → Γ ⊢ B
   ƛ_    : (Γ ▷ A) ⊢ wkᵀ B A → Γ ⊢ (A ⇒ B) 
 
-data _⊩[_]_ : Cx → Sort → Cx → Set 
+data _⊩[_]_ : Con → Sort → Con → Set 
 _[_]ᵀ : Γ ⊢[ q ∣ m ]ᵀ → Δ ⊩[ r ] Γ → Δ ⊢[ q ⊔ r ∣ m ]ᵀ 
 
 data _⊩[_]_ where
@@ -303,7 +303,7 @@ abstract
   -- _,_   : {A : Γ ⊢[ T ]} →
   --   Γ ⊩[ q ] Δ → Γ ⊢[ m ]ᵀ Q → Γ ⊩[ q ] (Δ ▷[ m ] {! Q !}) 
 
--- _⊩[_]_ : Cx → Sort → Cx → Set
+-- _⊩[_]_ : Con → Sort → Con → Set
 -- Γ ⊩[ q ] Δ = Tm (su q) (Γ , Δ)  
 
 {-
@@ -389,7 +389,7 @@ id {Γ = xs ▷ x} = id ^ _
 instance 
   V<T : Suc q 
   V<T {V} = record { wk = suc } 
-  -- the seCxd uses the first clause.. 
+  -- the second uses the first clause.. 
   V<T {T} = record { wk = λ x _ → x [ id ⁺ _ ] } 
 
 -- [MW] syntax 

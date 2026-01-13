@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting --local-confluence-check #-}
-module alternative where
+module alt where
 
 open import Relation.Binary.PropositionalEquality hiding ([_])
 open  ≡-Reasoning public
