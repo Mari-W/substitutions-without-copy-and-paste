@@ -42,13 +42,13 @@ variable
 ⟦_⟧ : Mode (q , i , j , k , o) → Set
 data Tm : (m : Mode (q , i , j , k , o)) → ⟦ m ⟧ → Set   
 
-⟦ ki   ⟧ = ⊤ 
+⟦ ki   ⟧ = ⊤
 ⟦ cx   ⟧ = ⊤
 ⟦ su _ ⟧ = Tm cx tt × Tm cx tt
 ⟦ ex _ ⟧ = ∃[ Γ ] Tm (ty 1) Γ
 ⟦ ty _ ⟧ = Tm cx tt × Tm ki tt
 
-matrix : Mode M → Matrix
+{- matrix : Mode M → Matrix
 matrix {M} m = M
 
 _↑ᴵ : (m : Mode (q , i , j , k , o)) → Matrix
@@ -145,4 +145,4 @@ _ : Tm (ty 0) (• , *)
 _ = {!  zero {Γ = •} !} -}
 
 _ : Tm (ty 0) (({!  • !} ⟦▷⟧ *) ∶ subst (Tm _) ⌊▷⌋ᵀ (wk _ _))
-_ = zero {m = ty 0} {n = {! ki  !}}
+_ = zero {m = ty 0} {n = {! ki  !}} -}
