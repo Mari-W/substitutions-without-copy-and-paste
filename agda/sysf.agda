@@ -19,15 +19,15 @@ infix   8  _⁺_
 infix   8  _↑_
 infix   8  _[_]
 
-Matrix = ℕ × ℕ × ℕ × ℕ 
+Matrix = ℕ × ℕ × ℕ × ℕ × ℕ 
 
--- VarTm / Bind / Termination / Ctx
+-- VarTm / Bind / Termination / Ctx / Wk
 data Mode : Matrix → Set where
-  ex : (q : ℕ) → Mode (q , 1 , 1 , 0) 
-  ty : (q : ℕ) → Mode (q , 1 , 0 , 1)
-  su : (q : ℕ) → Mode (q , 0 , 1 , 0)
-  cx : Mode (2 , 0 , 0 , 0) 
-  ki : Mode (2 , 0 , 0 , 1) 
+  ex : (q : ℕ) → Mode (q , 1 , 2 , 0 , 1) 
+  ty : (q : ℕ) → Mode (q , 1 , 1 , 1 , 1)
+  su : (q : ℕ) → Mode (q , 0 , 1 , 0 , 0)
+  cx : Mode (2 , 0 , 0 , 0 , 0) 
+  ki : Mode (2 , 0 , 0 , 1 , 1) 
 
 variable
   h i j k o : ℕ
@@ -37,10 +37,10 @@ variable
   q r s : ℕ
   q′ r′ s′ : ℕ
   q′′ r′′ s′′ : ℕ
-  m n   : Mode (q , i , j , o) 
+  m n   : Mode (q , i , j , k , o) 
 
-⟦_⟧ : Mode (q , i , j  , o) → Set
-data Tm : (m : Mode (q , i , j  , o)) → ⟦ m ⟧ → Set   
+⟦_⟧ : Mode (q , i , j , k , o) → Set
+data Tm : (m : Mode (q , i , j , k , o)) → ⟦ m ⟧ → Set   
 
 ⟦ ki   ⟧ = ⊤ 
 ⟦ cx   ⟧ = ⊤
@@ -51,14 +51,14 @@ data Tm : (m : Mode (q , i , j  , o)) → ⟦ m ⟧ → Set
 matrix : Mode M → Matrix
 matrix {M} m = M
 
-_↑ᴵ : (m : Mode (q , i , j  , o)) → Matrix
+_↑ᴵ : (m : Mode (q , i , j , k , o)) → Matrix
 ex _ ↑ᴵ = matrix (ty 1)
 ty _ ↑ᴵ = matrix ki
 su _ ↑ᴵ = matrix ki
 cx ↑ᴵ   = matrix ki
-_↑ᴵ {q} {i} {j} {o} ki = q , i , j  , o
+_↑ᴵ {q} {i} {j} {k} {o} ki = q , i , j , k , o
 
-_↑ᵀ : (m : Mode (q , i , j  , o)) → Mode (m ↑ᴵ)
+_↑ᵀ : (m : Mode (q , i , j , k , o)) → Mode (m ↑ᴵ)
 cx   ↑ᵀ = ki
 su _ ↑ᵀ = ki
 ki   ↑ᵀ = ki 
@@ -72,19 +72,31 @@ ex _ ↑ᵀ = ty 1
 ⌊_⌋ᵀ {m = ex _} (Γ , _) = Γ
 ⌊_⌋ᵀ {m = ty _} _       = tt
 
-⌊_∣_⌋ᵀ : {m : Mode (q , i , j , o)} (n : Mode (q′ , i′ , j′ , 1)) →
+⌊_∣_⌋ᵀ : {m : Mode (q ,  1 , j , k , o)} 
+         (n : Mode (q′ , i′ , j′ , 1 , o′)) →
   ⟦ m ⟧ → ⟦ n ⟧  
-⌊_∣_⌋ᵀ ki _     = tt
+⌊_∣_⌋ᵀ            ki _             = tt
 ⌊_∣_⌋ᵀ {m = ex q} (ty _) (⟦m⟧ , _) = ⟦m⟧
-⌊_∣_⌋ᵀ {m = ty q} (ty _) ⟦m⟧ = ⟦m⟧
+⌊_∣_⌋ᵀ {m = ty q} (ty _) ⟦m⟧       = ⟦m⟧
 
-_⟦▷⟧_ : ∀ {m : Mode (q , i , j , o)} {n : Mode (q′ , i′ , j′ , 1)} →
+lemma₁ : {m : Mode (0 , 1 , j , k , o)} 
+  (n : Mode (q′ , 1 , j′ , 1 , 1)) (Q :  ⟦ m ⟧) → 
+  ⌊ n ∣ ⌊ n ∣ Q ⌋ᵀ ⌋ᵀ ≡ ⌊ n ∣ Q ⌋ᵀ
+lemma₁ {m = m} (ty q) Q = refl
+{-# REWRITE lemma₁ #-}
+
+
+_⟦▷⟧_ : ∀ {m : Mode (q , 1 , j , k , o)} {n : Mode (q′ , i′ , j′ , 1 , o′)} →
   (Q : ⟦ m ⟧) → Tm n ⌊ n ∣ Q ⌋ᵀ → ⟦ m ⟧
 
-_∶_ : ∀ {m : Mode (q , 1 , j  , o)} {n : Mode (q′ , i′ , j′ , 1)} →
+⌊▷⌋ᵀ : {m : Mode (0 , 1 , j , k , o)} {n : Mode (q′ , 1 , j′ , 1 , 1)} 
+  {Q :  ⟦ m ⟧} {T : Tm n ⌊ n ∣ Q ⌋ᵀ} → 
+  (⌊ n ∣ Q ⌋ᵀ ⟦▷⟧ T) ≡ ⌊ n ∣ Q ⟦▷⟧ T ⌋ᵀ
+
+_∶_ : ∀ {m : Mode (q , 1 , j  , k , o)} {n : Mode (q′ , i′ , j′ , 1 , 1)} →
   (Q : ⟦ m ⟧) → Tm n ⌊ n ∣ Q ⌋ᵀ → ⟦ m ⟧ 
 
-wk : ∀  {m : Mode (q , i , j , o)} {n : Mode (q′ , i′ , j′ , 1)} {Q} → 
+wk : ∀  {m : Mode (q , 1 , j , k , o)} {n : Mode (q′ , i′ , j′ , 1 , 1)} {Q} → 
   Tm m Q → (T : Tm n ⌊ n ∣ Q ⌋ᵀ) → Tm m (Q ⟦▷⟧ T)
 
 data Tm where
@@ -96,7 +108,7 @@ data Tm where
   •   : ∀ {Q} → 
     -------------
     Tm cx Q
-  _▷_ : ∀ {m : Mode (q , i , j  , 1)} {Q R} →
+  _▷_ : ∀ {m : Mode (q , i , j  , 1 , o)} {Q R} →
     Tm cx Q →
     Tm m R → 
     --------------
@@ -106,30 +118,31 @@ data Tm where
     ------------------------
     Tm (su q) (Γ ,  •)
   _⸴_ : 
-    ∀ {Q R} {Γ : Tm cx Q} {Δ : Tm cx R} {m : Mode (q , i , j  , 1)} {Q} →
+    ∀ {Q R} {Γ : Tm cx Q} {Δ : Tm cx R} {m : Mode (q , i , j  , 1 , 0)} {Q} →
     Tm (su q) (Γ ,  Δ) →
     (T : Tm m Q) → 
     Tm (su q) (Γ ,  Δ ▷ T)
 
   ** : ∀{Γ} → Tm (ty 1) (Γ , *)
 
-  zero  : ∀ {m : Mode (0 , 1 , j  , o)} {n : Mode (q′ , i′ , j′ , 1)} 
+  zero  : ∀ {m : Mode (0 , 1 , j  , k , o)} {n : Mode (q′ , 1 , j′ , 1 , 1)} 
     {Q : ⟦ m ⟧} {T : Tm n ⌊ n ∣ Q ⌋ᵀ} →
-    Tm m ((Q ⟦▷⟧ T) ∶ {! wk ? T  !})
-
+    Tm m ((Q ⟦▷⟧ T) ∶ subst (Tm n) ⌊▷⌋ᵀ (wk T T))
 
 _⟦▷⟧_ {m = ty q} {n = _}(Γ , T) R = (Γ ▷ R) , T
 _⟦▷⟧_ {m = ex _} {n = ki} ((Γ , k) , T) R = ((Γ ▷ R) , k) , wk T R 
 _⟦▷⟧_ {m = ex _} {n = ty _} ((Γ , k) , T) R = ((Γ ▷ R) , k) , wk {n = ty _} T R
 
+wk T = {!    !} 
 
-wk = {!   !}
+⌊▷⌋ᵀ {m = ex _} {n = ty q} = refl
+⌊▷⌋ᵀ {m = ty _} {n = ty q} = refl 
 
 -- _∶_ {m = ex q} {Q} Γ R = Q , R 
 -- _∶_ {m = ty q} Γ Q = Γ , Q
-
+{- 
 _ : Tm (ty 0) (• , *)
-_ = {!  zero {Γ = •} !}
+_ = {!  zero {Γ = •} !} -}
 
--- _ : Tm (ty 0) ((• ▷ *) , *)
--- _ = zero {Γ = •}
+_ : Tm (ty 0) (({!  • !} ⟦▷⟧ *) ∶ subst (Tm _) ⌊▷⌋ᵀ (wk _ _))
+_ = zero {m = ty 0} {n = {! ki  !}}

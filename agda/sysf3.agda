@@ -15,7 +15,7 @@ infix   5  _∘_
 infix   5  ƛ_
 infixl  6  _·_
 infix   7  `_
-infix   8  _⁺_
+infix   8  _⁺_ 
 infix   8  _↑_
 infix   8  _[_]
 
