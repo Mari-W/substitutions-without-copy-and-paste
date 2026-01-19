@@ -48,7 +48,7 @@ data Tm : (m : Mode (q , i , j , k , o)) → ⟦ m ⟧ → Set
 ⟦ ex _ ⟧ = ∃[ Γ ] Tm (ty 1) Γ
 ⟦ ty _ ⟧ = Tm cx tt × Tm ki tt
 
-{- matrix : Mode M → Matrix
+matrix : Mode M → Matrix
 matrix {M} m = M
 
 _↑ᴵ : (m : Mode (q , i , j , k , o)) → Matrix
@@ -85,7 +85,6 @@ lemma₁ : {m : Mode (0 , 1 , j , k , o)}
 lemma₁ {m = m} (ty q) Q = refl
 {-# REWRITE lemma₁ #-}
 
-
 _⟦▷⟧_ : ∀ {m : Mode (q , 1 , j , k , o)} {n : Mode (q′ , i′ , j′ , 1 , o′)} →
   (Q : ⟦ m ⟧) → Tm n ⌊ n ∣ Q ⌋ᵀ → ⟦ m ⟧
 
@@ -120,7 +119,7 @@ data Tm where
   _⸴_ : 
     ∀ {Q R} {Γ : Tm cx Q} {Δ : Tm cx R} {m : Mode (q , i , j  , 1 , 0)} {Q} →
     Tm (su q) (Γ ,  Δ) →
-    (T : Tm m Q) → 
+    (T : Tm m Q) →
     Tm (su q) (Γ ,  Δ ▷ T)
 
   ** : ∀{Γ} → Tm (ty 1) (Γ , *)
@@ -145,4 +144,4 @@ _ : Tm (ty 0) (• , *)
 _ = {!  zero {Γ = •} !} -}
 
 _ : Tm (ty 0) (({!  • !} ⟦▷⟧ *) ∶ subst (Tm _) ⌊▷⌋ᵀ (wk _ _))
-_ = zero {m = ty 0} {n = {! ki  !}} -}
+_ = zero {m = ty 0} {n = {! ki  !}} 
